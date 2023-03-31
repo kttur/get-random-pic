@@ -1,0 +1,22 @@
+name: Docker Compose
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Deploy Docker Compose
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_COMMAND: ${{ secrets.DEPLOY_COMMAND }}
+        run: |
+          echo "$DEPLOY_SSH_KEY" > /tmp/deploy_key
+          chmod 600 /tmp/deploy_key
+          ssh -o StrictHostKeyChecking=no -i /tmp/deploy_key $DEPLOY_USER@$DEPLOY_HOST $DEPLOY_COMMAND
+
