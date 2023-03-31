@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Get random pic</title>
+        <style>
+            #randomBtn {
+                font-size: 20px;
+                padding: 10px;
+                margin: 20px;
+                background-color: #f5f5f5;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+            }
+
+            #languageSelect {
+                font-size: 18px;
+                padding: 10px;
+                margin: 20px;
+                background-color: #f5f5f5;
+                border: none;
+                border-radius: 5px;
+            }
+
+            .contentContainer {
+                max-width: 100%;
+                max-height: 90vh;
+                margin: auto;
+            }
+
+            .mediaWrapper {
+                max-width: 80vw;
+                max-height: 80vh;
+                margin: auto;
+            }
+
+            .center-fit {
+                max-width: 100%;
+                max-height: 80vh;
+                margin: auto;
+            }
+            
+        </style>
+    </head>
+<body>
+    <div id="contentContainer"></div>
+	<button id="randomBtn">Get Random Pic</button>
+	<select id="languageSelect">
+        <option value="all">All</option>
+		<option value="ru">Russian</option>
+		<option value="en">English</option>
+		<option value="no-text">No Text</option>
+	</select>
+	<div id="mediaContainer"></div>
+</body>
+</html>
+
+<script>
+const mediaPaths = {
+	"ru": ["./static/ru/", "./static/no_text/"],
+	"en": ["./static/en/", "./static/no_text/"],
+	"no-text": ["./static/no_text/"],
+	"all": ["./static/ru/", "./static/en/", "./static/no_text/"]
+};
+
+let seenMedia = {};
+
+async function getRandomMedia(language) {
+	const folderPaths = mediaPaths[language];
+	const folderContents = await Promise.all(folderPaths.map(getFolderContents));
+	const filePaths = folderContents.flat().filter(path => path.match(/\.(jpe?g|gif|png|webp|mp4)$/i));
+	const unseenPaths = filePaths.filter(path => !(path in seenMedia));
+	if (unseenPaths.length === 0) {
+		alert("You've seen them all!");
+		return;
+	}
+	const randomPath = unseenPaths[Math.floor(Math.random() * unseenPaths.length)];
+	seenMedia[randomPath] = true;
+	const mediaType = randomPath.split('.').pop();
+	let media;
+	if (mediaType === 'mp4') {
+        media = document.createElement('video');
+        media.setAttribute('autoplay', true);
+        media.setAttribute('controls', true);
+        const source = document.createElement('source');
+        source.setAttribute('src', randomPath);
+        source.setAttribute('type', 'video/mp4');
+        media.appendChild(source);
+    } else {
+        media = document.createElement('img');
+        media.setAttribute('src', randomPath);
+        media.setAttribute('class', 'center-fit');
+    }
+	media.setAttribute('src', randomPath);
+	document.getElementById('mediaContainer').innerHTML = '';
+	document.getElementById('mediaContainer').appendChild(media);
+}
+
+function getFolderContents(folderPath) {
+	return fetch(folderPath)
+		.then(response => response.text())
+		.then(html => {
+			const parser = new DOMParser();
+			const doc = parser.parseFromString(html, 'text/html');
+			const fileNames = [...doc.querySelectorAll('a')].map(link => link.getAttribute('href'));
+            return fileNames.map(fileName => `${folderPath}/${fileName}`);
+		})
+		.catch(error => {
+			console.error(`Error loading folder contents from ${folderPath}: ${error}`);
+			return [];
+		});
+}
+
+document.getElementById('randomBtn').addEventListener('click', () => {
+	const language = document.getElementById('languageSelect').value;
+	getRandomMedia(language);
+});
+
+</script>
